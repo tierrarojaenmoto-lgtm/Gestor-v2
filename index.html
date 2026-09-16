@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1976d2">
+<meta name="description" content="Gestor de precios y actualización de listas para vendedores">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<title>Gestor de Precios</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f3f6;color:#222}.container{width:95%;max-width:1400px;margin:16px auto}.header{background:#1976d2;color:#fff;padding:20px;border-radius:14px;margin-bottom:14px}.header h1{margin:0;font-size:25px}.header p{margin:8px 0}.pill{display:inline-block;background:rgba(255,255,255,.16);padding:7px 12px;border-radius:20px;font-size:13px}.card{background:#fff;padding:18px;border-radius:14px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}h2{margin-top:0}.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.url{flex:1;min-width:240px;padding:12px;border:1px solid #bbb;border-radius:7px;font-size:15px}.upload{border:2px dashed #1976d2;padding:24px;text-align:center;border-radius:10px;background:#f8fbff}.upload input{width:100%;max-width:520px}.buttons{display:flex;flex-wrap:wrap;gap:8px}button{border:0;padding:12px 16px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:bold}button:disabled{opacity:.55;cursor:not-allowed}.primary{background:#1976d2;color:#fff}.success{background:#2e7d32;color:#fff}.orange{background:#ef6c00;color:#fff}.gray{background:#555;color:#fff}.teal{background:#00897b;color:#fff}.red{background:#c62828;color:#fff}.status{margin-top:10px;min-height:20px;font-size:14px}.error{color:#c62828;font-weight:bold}.ok{color:#2e7d32;font-weight:bold}.progress-wrap{display:none;margin-top:14px}.progress{height:20px;background:#ddd;border-radius:20px;overflow:hidden}.bar{height:100%;width:0;background:#1976d2;transition:width .2s}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:#f5f5f5;padding:14px;border-radius:9px;text-align:center}.stat strong{display:block;font-size:25px;color:#1976d2}.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.cat{border:1px solid #ddd;border-radius:10px;padding:14px}.cat input{width:100%;padding:11px;font-size:18px;border:1px solid #bbb;border-radius:7px}.search{width:100%;padding:13px;font-size:16px;border:1px solid #bbb;border-radius:7px}.selection-box{background:#eef6ff;border:1px solid #b9dcff;padding:12px;border-radius:10px;margin:12px 0}.selection-count{font-weight:bold;color:#1976d2}.table-wrap{max-height:600px;overflow:auto;border:1px solid #ddd;border-radius:7px}table{width:100%;border-collapse:collapse;font-size:14px}th{background:#1976d2;color:#fff;position:sticky;top:0;z-index:2}th,td{border:1px solid #ddd;padding:8px;text-align:left}tbody tr:nth-child(even){background:#fafafa}.price{width:120px;padding:7px;border:1px solid #aaa;border-radius:5px}.check{width:21px;height:21px;cursor:pointer}.excluded{opacity:.55;background:#fff2f2!important}.excluded td:not(:last-child){text-decoration:line-through;text-decoration-color:#c62828}.excluded td:last-child{text-decoration:none}.small{font-size:13px;color:#666}.install{display:none;margin-top:10px}.install.show{display:inline-block}@media(max-width:800px){.cats{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}table{font-size:12px}th,td{padding:6px}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1 id="titulo">Gestor de Precios</h1>
+<p>Subí tu lista PDF, aplicá porcentajes y enviá solamente los artículos seleccionados a Google Sheets.</p>
+<div class="row">
+<span class="pill" id="syncPill">Sin sincronizar aún</span>
+<button class="primary install" id="installBtn">📲 Instalar aplicación</button>
+</div>
+</div>
+
+<div class="card">
+<h2>🔗 Conexión con Google Sheets</h2>
+<div class="row">
+<input class="url" type="url" id="webhookUrl" placeholder="Pegá la URL de tu Web App de Apps Script (termina en /exec)">
+<button class="gray" id="saveUrlBtn">Guardar URL</button>
+<button class="primary" id="loadSheetsBtn">📥 Cargar desde Sheets</button>
+</div>
+<div class="status" id="syncStatus"></div>
+</div>
+
+<div class="card">
+<h2>1. Cargar lista de artículos</h2>
+<div class="upload">
+<input type="file" id="pdfFile" accept=".pdf,application/pdf">
+<div class="progress-wrap" id="progressWrap"><div class="progress"><div class="bar" id="progressBar"></div></div><div id="progressStatus" class="status">Preparando...</div></div>
+</div>
+<p class="small">Al cargar un nuevo PDF se reemplaza la lista anterior. Las exclusiones se conservan cuando el código del artículo sigue existiendo.</p>
+</div>
+
+<div class="card">
+<h2>Resumen</h2>
+<div class="stats">
+<div class="stat"><strong id="totalArticulos">0</strong>Artículos</div>
+<div class="stat"><strong id="totalAnalgesicos">0</strong>Analgésicos</div>
+<div class="stat"><strong id="totalGenericos">0</strong>Genéricos</div>
+<div class="stat"><strong id="totalAccesorios">0</strong>Accesorios</div>
+</div>
+</div>
+
+<div class="card">
+<h2>2. Modificar precios por categoría</h2>
+<div class="cats">
+<div class="cat"><h3>💊 Analgésicos</h3><input type="number" id="pAnalgesicos" value="0" step="0.01"><small>Porcentaje de aumento/disminución.</small></div>
+<div class="cat"><h3>💊 Genéricos</h3><input type="number" id="pGenericos" value="0" step="0.01"><small>Porcentaje de aumento/disminución.</small></div>
+<div class="cat"><h3>🧴 Accesorios</h3><input type="number" id="pAccesorios" value="0" step="0.01"><small>Porcentaje de aumento/disminución.</small></div>
+</div><br>
+<div class="buttons"><button class="primary" id="applyBtn">Aplicar cambios</button><button class="gray" id="resetBtn">Restablecer precios</button></div>
+</div>
+
+<div class="card">
+<h2>3. Exportación a Google Sheets</h2>
+<div class="selection-box">
+<div><b>Seleccioná qué artículos querés enviar.</b></div>
+<div class="small">Los artículos desmarcados permanecen en esta aplicación, pero NO se envían a Google Sheets.</div>
+<div style="margin-top:8px"><span class="selection-count" id="selectionInfo">0 de 0 artículos se enviarán a Google Sheets.</span></div>
+</div>
+<div class="buttons">
+<button class="primary" id="allBtn">☑️ Exportar todos</button>
+<button class="gray" id="noneBtn">🚫 No exportar ninguno</button>
+<button class="orange" id="invertBtn">🔄 Invertir selección</button>
+<button class="success" id="copyBtn">📋 Copiar seleccionados</button>
+<button class="teal" id="syncBtn">🔄 Sincronizar con Google Sheets</button>
+</div>
+</div>
+
+<div class="card">
+<h2>4. Lista de artículos</h2>
+<p class="small">Usá la casilla <b>Enviar a Sheets</b> de cada artículo para excluirlo individualmente.</p>
+<input class="search" id="buscar" type="text" placeholder="Buscar por código, producto o categoría...">
+<br><br>
+<div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Precio de costo</th><th>Precio de venta</th><th>Categoría</th><th>Enviar a Sheets</th></tr></thead><tbody id="tablaBody"><tr><td colspan="6" style="text-align:center;padding:30px;color:#777">Todavía no cargaste ningún PDF.</td></tr></tbody></table></div>
+</div>
+</div>
+
+<script>
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+const LS_PRODUCTS='gp_productos_v3', LS_PCTS='gp_porcentajes_v3', LS_URL='gp_sheets_url_v3', LS_SYNC='gp_ultima_sync_v3';
+let productos=[], porcentajes={Analgesicos:0,Genericos:0,Accesorios:0};
+const $=id=>document.getElementById(id);
+function save(){try{localStorage.setItem(LS_PRODUCTS,JSON.stringify(productos));localStorage.setItem(LS_PCTS,JSON.stringify(porcentajes));}catch(e){console.warn(e)}}
+function load(){try{const p=JSON.parse(localStorage.getItem(LS_PRODUCTS)||'null'), pc=JSON.parse(localStorage.getItem(LS_PCTS)||'null');if(pc){porcentajes={Analgesicos:Number(pc.Analgesicos)||0,Genericos:Number(pc.Genericos)||0,Accesorios:Number(pc.Accesorios)||0};$('pAnalgesicos').value=porcentajes.Analgesicos;$('pGenericos').value=porcentajes.Genericos;$('pAccesorios').value=porcentajes.Accesorios}if(Array.isArray(p)&&p.length){productos=p.map(normalizarProducto);render();stats();$('titulo').textContent='Gestor de Precios - '+productos.length+' artículos';setStatus('Se recuperaron '+productos.length+' artículos guardados en este dispositivo.','ok')}}catch(e){console.warn(e)}}
+function normalizarProducto(p){return{codigo:String(p.codigo||''),producto:String(p.producto||''),costo:Number(p.costo)||0,venta:Number(p.venta)||0,categoria:p.categoria||'General',noSync:p.noSync===true||p.noExport===true}}
+function setStatus(t,c=''){$('syncStatus').className='status '+c;$('syncStatus').textContent=t}
+function money(n){return Number(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2})}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function escapeJS(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function stats(){$('totalArticulos').textContent=productos.length;$('totalAnalgesicos').textContent=productos.filter(p=>p.categoria==='Analgesicos').length;$('totalGenericos').textContent=productos.filter(p=>p.categoria==='Genericos').length;$('totalAccesorios').textContent=productos.filter(p=>p.categoria==='Accesorios').length;}
+function updateSelection(){const n=productos.filter(p=>!p.noSync).length;$('selectionInfo').textContent=`${n} de ${productos.length} artículos se enviarán a Google Sheets.`}
+function render(){const q=$('buscar').value.toLowerCase().trim(), tbody=$('tablaBody');tbody.innerHTML='';const arr=productos.filter(p=>p.codigo.toLowerCase().includes(q)||p.producto.toLowerCase().includes(q)||p.categoria.toLowerCase().includes(q));if(!arr.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:#777">No se encontraron artículos.</td></tr>';updateSelection();return}arr.forEach(p=>{const tr=document.createElement('tr');if(p.noSync)tr.className='excluded';tr.innerHTML=`<td>${escapeHTML(p.codigo)}</td><td>${escapeHTML(p.producto)}</td><td>$ ${money(p.costo)}</td><td><input class="price" type="number" value="${p.venta}" data-code="${escapeHTML(p.codigo)}"></td><td>${escapeHTML(p.categoria)}</td><td style="text-align:center"><input class="check" type="checkbox" ${p.noSync?'':'checked'} title="${p.noSync?'No se enviará':'Se enviará'}"></td>`;const price=tr.querySelector('.price');price.addEventListener('change',()=>{p.venta=Number(price.value)||0;save()});const check=tr.querySelector('.check');check.addEventListener('change',()=>{p.noSync=!check.checked;save();render()});tbody.appendChild(tr)});updateSelection()}
+function apply(){porcentajes.Analgesicos=Number($('pAnalgesicos').value)||0;porcentajes.Genericos=Number($('pGenericos').value)||0;porcentajes.Accesorios=Number($('pAccesorios').value)||0;productos.forEach(p=>{const x=porcentajes[p.categoria]||0;p.venta=Math.round(p.costo*(1+x/100))});save();render();setStatus('Precios actualizados.','ok')}
+function reset(){productos.forEach(p=>p.venta=p.costo);porcentajes={Analgesicos:0,Genericos:0,Accesorios:0};$('pAnalgesicos').value=0;$('pGenericos').value=0;$('pAccesorios').value=0;save();render();setStatus('Precios restablecidos.','ok')}
+function selectAll(){productos.forEach(p=>p.noSync=false);save();render()}
+function selectNone(){productos.forEach(p=>p.noSync=true);save();render()}
+function invert(){productos.forEach(p=>p.noSync=!p.noSync);save();render()}
+function parsePrice(s){let x=String(s||'').replace(/\$/g,'').replace(/\s/g,'').trim();if(!x)return 0;if(x.includes(',')&&x.includes('.'))x=x.replace(/\./g,'').replace(',','.');else if(x.includes(','))x=x.replace(',','.');else if((x.match(/\./g)||[]).length>1)x=x.replace(/\./g,'');return parseFloat(x)||0}
+function isPrice(s){return /^\$?[\d.,]+$/.test(s)&&/\d/.test(s)}
+function cleanLine(s){return s.replace(/\|/g,' ').replace(/\s+/g,' ').trim()}
+function isHeader(s){const x=s.toLowerCase();return !x||x.includes('descripcion')||x.includes('articulo')||x.includes('co-fi')||x.includes('vendedores')||x.includes('pagina')||x.includes('lista :')||/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(x)}
+function processLines(lines){let cat='General',code='',desc=[];for(let raw of lines){let line=cleanLine(raw);if(isHeader(line))continue;let low=line.toLowerCase();if(/analg[eé]sicos?|analgesicos?/.test(low)){cat='Analgesicos';continue}if(/gen[eé]ricos?|genericos?/.test(low)){cat='Genericos';continue}if(/accesorios?/.test(low)){cat='Accesorios';continue}let t=line.split(/\s+/), last=t[t.length-1];if(isPrice(last)){const cost=parsePrice(last);t.pop();let rest=t.join(' ');let m=rest.match(/^(\d+\/\d+|\d{3,})\s*(.*)$/);if(m){code=m[1];if(m[2])desc.push(m[2])}else if(rest)desc.push(rest);let d=desc.join(' ').replace(/\bx1\b/gi,'').replace(/\s+/g,' ').trim();if(cost>0&&d){productos.push({codigo:code||'S/C',producto:d,costo:cost,venta:cost,categoria:cat,noSync:false})}code='';desc=[]}else{let m=line.match(/^(\d+\/\d+|\d{3,})\s*(.*)$/);if(m){code=m[1];if(m[2]&&m[2].toLowerCase()!=='x1')desc.push(m[2])}else if(low!=='x1')desc.push(line)}}}
+async function readPDF(file){if(!window.pdfjsLib){alert('No se pudo cargar el lector PDF. Abrí la aplicación con conexión a Internet una vez y volvé a intentarlo.');return}const oldMap=new Map(productos.map(p=>[String(p.codigo),p.noSync===true]));productos=[];$('progressWrap').style.display='block';$('progressBar').style.width='0%';$('progressStatus').textContent='Leyendo archivo PDF...';try{const buffer=await file.arrayBuffer();const pdf=await pdfjsLib.getDocument({data:buffer}).promise;let lines=[];for(let n=1;n<=pdf.numPages;n++){const page=await pdf.getPage(n), content=await page.getTextContent();let items=content.items.map(i=>({str:i.str,x:i.transform[4],y:i.transform[5]}));items.sort((a,b)=>Math.abs(a.y-b.y)>4?b.y-a.y:a.x-b.x);let line='',y=null;for(const it of items){if(!it.str.trim())continue;if(y===null||Math.abs(it.y-y)>4){if(line)lines.push(line.trim());line=it.str;y=it.y}else line+=' '+it.str}if(line)lines.push(line.trim());$('progressBar').style.width=Math.round(n/pdf.numPages*100)+'%';$('progressStatus').textContent=`Leyendo página ${n} de ${pdf.numPages}...`;await new Promise(r=>setTimeout(r,0))}processLines(lines);productos.forEach(p=>p.noSync=oldMap.get(String(p.codigo))===true);save();stats();render();$('titulo').textContent='Gestor de Precios - '+productos.length+' artículos';$('progressStatus').innerHTML='<span class="ok">PDF procesado correctamente.</span> Se encontraron '+productos.length+' artículos.';if(!productos.length)alert('El PDF se abrió correctamente, pero no se encontraron artículos con el formato esperado.');else setStatus('Lista PDF cargada correctamente.','ok')}catch(e){console.error(e);$('progressStatus').innerHTML='<span class="error">Error al procesar el PDF.</span>';alert('No se pudo leer el PDF. Probá con el mismo PDF que usabas anteriormente o enviámelo para adaptar el lector.')}}
+async function copySheets(){const ex=productos.filter(p=>!p.noSync);if(!ex.length){alert('No hay artículos seleccionados para exportar.');return}let txt='Código\tProducto\tPrecio de costo\tPrecio de venta\tCategoría\n'+ex.map(p=>`${p.codigo}\t${p.producto}\t${p.costo}\t${p.venta}\t${p.categoria}`).join('\n');try{await navigator.clipboard.writeText(txt);alert(`Se copiaron ${ex.length} artículos. Los excluidos no fueron incluidos.`)}catch(e){alert('Chrome no permitió copiar automáticamente.')}}
+async function syncSheets(){const url=$('webhookUrl').value.trim();if(!url){setStatus('Pegá primero la URL de tu Web App.','error');return}const ex=productos.filter(p=>!p.noSync);if(!ex.length){setStatus('No hay artículos seleccionados para enviar.','error');return}$('syncBtn').disabled=true;setStatus('Sincronizando con Google Sheets...');try{const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({productos:ex.map(p=>({codigo:p.codigo,producto:p.producto,costo:p.costo,precio:p.venta,categoria:p.categoria}))})});const data=await res.json();if(!data.ok)throw new Error(data.error||'Error desconocido');localStorage.setItem(LS_SYNC,new Date().toISOString());$('syncPill').textContent='Última sincronización: '+new Date().toLocaleString('es-AR');setStatus(`Listo: se enviaron ${ex.length} artículos. Los excluidos no se enviaron.`,'ok')}catch(e){setStatus('Error al sincronizar: '+e.message,'error')}finally{$('syncBtn').disabled=false}}
+async function loadSheets(){const url=$('webhookUrl').value.trim();if(!url){setStatus('Pegá primero la URL de tu Web App.','error');return}setStatus('Cargando desde Sheets...');try{const old=new Map(productos.map(p=>[String(p.codigo),p.noSync===true]));const r=await fetch(url);const d=await r.json();if(!d.ok)throw new Error(d.error||'Error desconocido');productos=(d.productos||[]).map(p=>({codigo:String(p.codigo||''),producto:p.producto||'',costo:Number(p.costo)||0,venta:Number(p.precio)||0,categoria:p.categoria||'General',noSync:old.get(String(p.codigo))===true}));save();stats();render();$('titulo').textContent='Gestor de Precios - '+productos.length+' artículos';setStatus(`Se cargaron ${productos.length} productos desde Sheets.`,'ok')}catch(e){setStatus('No se pudo cargar: '+e.message,'error')}}
+$('pdfFile').addEventListener('change',e=>{if(e.target.files[0])readPDF(e.target.files[0])});$('buscar').addEventListener('input',render);$('applyBtn').onclick=apply;$('resetBtn').onclick=reset;$('allBtn').onclick=selectAll;$('noneBtn').onclick=selectNone;$('invertBtn').onclick=invert;$('copyBtn').onclick=copySheets;$('syncBtn').onclick=syncSheets;$('loadSheetsBtn').onclick=loadSheets;$('saveUrlBtn').onclick=()=>{localStorage.setItem(LS_URL,$('webhookUrl').value.trim());setStatus('URL guardada.','ok')};
+$('webhookUrl').value=localStorage.getItem(LS_URL)||'';const last=localStorage.getItem(LS_SYNC);if(last)$('syncPill').textContent='Última sincronización: '+new Date(last).toLocaleString('es-AR');load();
+let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').classList.add('show')});$('installBtn').onclick=async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$('installBtn').classList.remove('show')};window.addEventListener('appinstalled',()=>{$('installBtn').classList.remove('show')});
+if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});reg.update()}catch(e){console.warn('SW',e)}})}
+window.addEventListener('beforeunload',save);
+</script>
+</body>
+</html>

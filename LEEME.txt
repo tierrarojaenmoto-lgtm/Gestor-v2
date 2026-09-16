@@ -1,0 +1,22 @@
+GESTOR DE PRECIOS - INSTALACION EN GITHUB PAGES
+
+1) Crear un repositorio NUEVO en GitHub.
+2) Subir TODOS estos archivos en la RAIZ del repositorio:
+   - index.html   (exactamente con i minúscula)
+   - manifest.json
+   - sw.js
+   - icon-192.png
+   - icon-512.png
+3) Ir a Settings > Pages.
+4) En Build and deployment elegir: Deploy from a branch.
+5) Branch: main. Carpeta: /(root). Guardar.
+6) Esperar a que GitHub Pages publique el sitio.
+7) Abrir la URL de GitHub Pages con Chrome.
+
+IMPORTANTE:
+- No renombrar index.html a Index.html.
+- No borrar manifest.json, sw.js ni los dos iconos.
+- Al cargar un PDF, la aplicación muestra una casilla ENVIAR A SHEETS para cada artículo.
+- Desmarcar un artículo lo deja dentro de la aplicación, pero no lo envía a Google Sheets.
+- Los artículos y porcentajes se guardan en el almacenamiento local del dispositivo.
+- Al subir una nueva versión del index, el Service Worker usa una estrategia de actualización para evitar mantener la página vieja.
