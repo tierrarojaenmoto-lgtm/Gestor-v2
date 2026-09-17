@@ -1,128 +1,1449 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#1976d2">
-<meta name="description" content="Gestor de precios y actualización de listas para vendedores">
-<link rel="manifest" href="./manifest.json">
-<link rel="icon" href="./icon-192.png">
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="#2563eb" name="theme-color"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="Gestor inteligente de precios y sincronización móvil con Google Sheets" name="description"/>
 <title>Gestor de Precios</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f3f6;color:#222}.container{width:95%;max-width:1400px;margin:16px auto}.header{background:#1976d2;color:#fff;padding:20px;border-radius:14px;margin-bottom:14px}.header h1{margin:0;font-size:25px}.header p{margin:8px 0}.pill{display:inline-block;background:rgba(255,255,255,.16);padding:7px 12px;border-radius:20px;font-size:13px}.card{background:#fff;padding:18px;border-radius:14px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}h2{margin-top:0}.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.url{flex:1;min-width:240px;padding:12px;border:1px solid #bbb;border-radius:7px;font-size:15px}.upload{border:2px dashed #1976d2;padding:24px;text-align:center;border-radius:10px;background:#f8fbff}.upload input{width:100%;max-width:520px}.buttons{display:flex;flex-wrap:wrap;gap:8px}button{border:0;padding:12px 16px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:bold}button:disabled{opacity:.55;cursor:not-allowed}.primary{background:#1976d2;color:#fff}.success{background:#2e7d32;color:#fff}.orange{background:#ef6c00;color:#fff}.gray{background:#555;color:#fff}.teal{background:#00897b;color:#fff}.red{background:#c62828;color:#fff}.status{margin-top:10px;min-height:20px;font-size:14px}.error{color:#c62828;font-weight:bold}.ok{color:#2e7d32;font-weight:bold}.progress-wrap{display:none;margin-top:14px}.progress{height:20px;background:#ddd;border-radius:20px;overflow:hidden}.bar{height:100%;width:0;background:#1976d2;transition:width .2s}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:#f5f5f5;padding:14px;border-radius:9px;text-align:center}.stat strong{display:block;font-size:25px;color:#1976d2}.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.cat{border:1px solid #ddd;border-radius:10px;padding:14px}.cat input{width:100%;padding:11px;font-size:18px;border:1px solid #bbb;border-radius:7px}.search{width:100%;padding:13px;font-size:16px;border:1px solid #bbb;border-radius:7px}.selection-box{background:#eef6ff;border:1px solid #b9dcff;padding:12px;border-radius:10px;margin:12px 0}.selection-count{font-weight:bold;color:#1976d2}.table-wrap{max-height:600px;overflow:auto;border:1px solid #ddd;border-radius:7px}table{width:100%;border-collapse:collapse;font-size:14px}th{background:#1976d2;color:#fff;position:sticky;top:0;z-index:2}th,td{border:1px solid #ddd;padding:8px;text-align:left}tbody tr:nth-child(even){background:#fafafa}.price{width:120px;padding:7px;border:1px solid #aaa;border-radius:5px}.check{width:21px;height:21px;cursor:pointer}.excluded{opacity:.55;background:#fff2f2!important}.excluded td:not(:last-child){text-decoration:line-through;text-decoration-color:#c62828}.excluded td:last-child{text-decoration:none}.small{font-size:13px;color:#666}.install{display:none;margin-top:10px}.install.show{display:inline-block}@media(max-width:800px){.cats{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}table{font-size:12px}th,td{padding:6px}}
-</style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-border: #bfdbfe;
+      --surface: #ffffff;
+      --bg: #f8fafc;
+      --card-border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      padding-bottom: 90px;
+    }
+
+    /* Top AppBar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.3px;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .badge-mobile {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      background: #e0e7ff;
+      color: #4338ca;
+      padding: 2px 6px;
+      border-radius: 6px;
+      margin-left: 4px;
+    }
+
+    .sync-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+    .status-dot.active {
+      background: var(--success);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--card-border);
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+    }
+    .icon-btn:active { background: #f1f5f9; transform: scale(0.95); }
+
+    /* Main Scroll Area */
+    .content {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Stats Carousel */
+    .stats-carousel {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      margin: 0 -16px;
+      padding: 2px 16px;
+      scrollbar-width: none;
+    }
+    .stats-carousel::-webkit-scrollbar { display: none; }
+
+    .stat-card {
+      min-width: 120px;
+      flex: 1;
+      background: white;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .stat-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    .stat-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.1;
+    }
+    .stat-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Section Card */
+    .card {
+      background: white;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Upload Box */
+    .upload-zone {
+      border: 2px dashed #93c5fd;
+      background: #f0f7ff;
+      border-radius: 14px;
+      padding: 22px 14px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .upload-zone:active {
+      background: #e0f2fe;
+      border-color: var(--primary);
+    }
+    .upload-zone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon-circle {
+      width: 44px;
+      height: 44px;
+      background: #dbeafe;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+      color: var(--primary);
+    }
+
+    .upload-main-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-bottom: 3px;
+    }
+    .upload-sub-text {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .progress-box {
+      display: none;
+      margin-top: 12px;
+    }
+    .progress-bar-bg {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #3b82f6);
+      transition: width 0.2s ease;
+    }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Percentages Grid */
+    .cat-item {
+      background: #f8fafc;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .cat-item:last-child { margin-bottom: 0; }
+
+    .cat-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .cat-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cat-input-wrap {
+      display: flex;
+      align-items: center;
+      background: white;
+      border: 1.5px solid var(--card-border);
+      border-radius: 8px;
+      padding: 4px 8px;
+      width: 80px;
+      transition: border-color 0.15s ease;
+    }
+    .cat-input-wrap:focus-within { border-color: var(--primary); }
+    .cat-input-wrap input {
+      border: none;
+      outline: none;
+      width: 100%;
+      text-align: right;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      font-family: inherit;
+      background: transparent;
+    }
+    .cat-input-wrap span {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+
+    .pill-presets {
+      display: flex;
+      gap: 6px;
+    }
+    .preset-chip {
+      flex: 1;
+      padding: 6px 0;
+      background: white;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .preset-chip:active {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: var(--primary);
+    }
+
+    .btn-apply {
+      width: 100%;
+      margin-top: 14px;
+      padding: 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+    }
+    .btn-apply:active { transform: scale(0.98); background: #1d4ed8; }
+
+    /* Filter Controls */
+    .filter-tools {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .filter-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      background: #f8fafc;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .filter-btn:active { background: #e2e8f0; }
+
+    .search-input-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+    .search-input-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+    }
+    .search-input {
+      width: 100%;
+      padding: 10px 12px 10px 38px;
+      border-radius: 10px;
+      border: 1.5px solid var(--card-border);
+      background: #f8fafc;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    .search-input:focus {
+      background: white;
+      border-color: var(--primary);
+    }
+
+    /* Product Cards List */
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .prod-card {
+      background: white;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.15s ease;
+    }
+    .prod-card.excluded {
+      background: #fafafa;
+      opacity: 0.6;
+      border-color: #eee;
+    }
+    .prod-card.excluded .prod-title {
+      text-decoration: line-through;
+      color: #94a3b8;
+    }
+
+    .prod-info { flex: 1; min-width: 0; }
+    .prod-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .prod-code {
+      font-family: monospace;
+      font-size: 10px;
+      font-weight: 700;
+      color: #2563eb;
+      background: #eff6ff;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .prod-cat-pill {
+      font-size: 10px;
+      font-weight: 600;
+      color: #475569;
+      background: #f1f5f9;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .prod-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 0 0 6px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .prod-prices {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .cost-tag { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+
+    /* Editable Sell Price Field */
+    .sell-edit-wrap {
+      display: inline-flex;
+      align-items: center;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 7px;
+      padding: 2px 6px;
+      transition: all 0.15s ease;
+    }
+    .sell-edit-wrap:focus-within {
+      background: #ffffff;
+      border-color: #16a34a;
+      box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+    }
+    .sell-edit-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #16a34a;
+      margin-right: 4px;
+      user-select: none;
+    }
+    .sell-edit-input {
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 700;
+      color: #15803d;
+      font-family: inherit;
+      width: 78px;
+      padding: 0;
+    }
+    .sell-edit-input::-webkit-inner-spin-button,
+    .sell-edit-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .sell-edit-input {
+      -moz-appearance: textfield;
+    }
+
+    /* Custom Mobile Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #cbd5e1;
+      transition: .2s ease;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s ease;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-muted);
+    }
+    .empty-state svg {
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+    .empty-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #475569;
+    }
+    .empty-sub {
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    /* Fixed Bottom Action Bar */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--card-border);
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      z-index: 50;
+      box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-bottom {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.1s ease;
+    }
+    .btn-bottom:active { transform: scale(0.97); }
+
+    .btn-bottom-copy {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-bottom-sync {
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Config Bottom Sheet */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .bottom-sheet {
+      background: white;
+      width: 100%;
+      max-width: 480px;
+      border-radius: 20px 20px 0 0;
+      padding: 20px 18px 28px;
+      box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+      animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: #cbd5e1;
+      border-radius: 99px;
+      margin: 0 auto 16px;
+    }
+
+    .sheet-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 14px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sheet-input {
+      width: 100%;
+      padding: 12px;
+      border: 1.5px solid var(--card-border);
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      margin-bottom: 12px;
+    }
+    .sheet-input:focus { border-color: var(--primary); }
+
+    .sheet-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast.show { display: flex; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  </style>
 </head>
 <body>
-<div class="container">
-<div class="header">
-<h1 id="titulo">Gestor de Precios</h1>
-<p>Subí tu lista PDF, aplicá porcentajes y enviá solamente los artículos seleccionados a Google Sheets.</p>
-<div class="row">
-<span class="pill" id="syncPill">Sin sincronizar aún</span>
-<button class="primary install" id="installBtn">📲 Instalar aplicación</button>
+<div class="app-container">
+<!-- Header Android Bar -->
+<header class="topbar">
+<div class="brand-group">
+<div class="brand-icon">
+<svg fill="none" height="20" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="20">
+<rect height="20" rx="2" width="16" x="4" y="2"></rect>
+<line x1="8" x2="16" y1="6" y2="6"></line>
+<line x1="16" x2="16" y1="14" y2="18"></line>
+<path d="M16 10h.01"></path>
+<path d="M12 10h.01"></path>
+<path d="M8 10h.01"></path>
+<path d="M12 14h.01"></path>
+<path d="M8 14h.01"></path>
+<path d="M12 18h.01"></path>
+<path d="M8 18h.01"></path>
+</svg>
+</div>
+<div>
+<div style="display:flex; align-items:center;">
+<h1 class="brand-title">Gestor Precios</h1>
+<span class="badge-mobile">v2.0 Mobile</span>
+</div>
+<div class="sync-status">
+<span class="status-dot" id="statusDot"></span>
+<span id="syncText">Sin sincronizar</span>
 </div>
 </div>
-
-<div class="card">
-<h2>🔗 Conexión con Google Sheets</h2>
-<div class="row">
-<input class="url" type="url" id="webhookUrl" placeholder="Pegá la URL de tu Web App de Apps Script (termina en /exec)">
-<button class="gray" id="saveUrlBtn">Guardar URL</button>
-<button class="primary" id="loadSheetsBtn">📥 Cargar desde Sheets</button>
 </div>
-<div class="status" id="syncStatus"></div>
+<div class="top-actions">
+<button class="icon-btn" id="openSettingsBtn" title="Configuración de Google Sheets">
+<svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="18">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="12" cy="12" r="3"></circle>
+</svg>
+</button>
 </div>
-
-<div class="card">
-<h2>1. Cargar lista de artículos</h2>
-<div class="upload">
-<input type="file" id="pdfFile" accept=".pdf,application/pdf">
-<div class="progress-wrap" id="progressWrap"><div class="progress"><div class="bar" id="progressBar"></div></div><div id="progressStatus" class="status">Preparando...</div></div>
+</header>
+<main class="content">
+<!-- Carrusel de Resumen -->
+<div class="stats-carousel">
+<div class="stat-card">
+<div class="stat-badge">
+<span class="stat-dot" style="background:#2563eb;"></span> Total
+        </div>
+<div class="stat-val" id="totalArticulos">0</div>
+<div class="stat-sub">productos</div>
 </div>
-<p class="small">Al cargar un nuevo PDF se reemplaza la lista anterior. Las exclusiones se conservan cuando el código del artículo sigue existiendo.</p>
+<div class="stat-card">
+<div class="stat-badge">
+<span class="stat-dot" style="background:#f43f5e;"></span> 💊 Analgésicos
+        </div>
+<div class="stat-val" id="totalAnalgesicos">0</div>
+<div class="stat-sub">ítems cargados</div>
 </div>
-
-<div class="card">
-<h2>Resumen</h2>
-<div class="stats">
-<div class="stat"><strong id="totalArticulos">0</strong>Artículos</div>
-<div class="stat"><strong id="totalAnalgesicos">0</strong>Analgésicos</div>
-<div class="stat"><strong id="totalGenericos">0</strong>Genéricos</div>
-<div class="stat"><strong id="totalAccesorios">0</strong>Accesorios</div>
+<div class="stat-card">
+<div class="stat-badge">
+<span class="stat-dot" style="background:#8b5cf6;"></span> 🧬 Genéricos
+        </div>
+<div class="stat-val" id="totalGenericos">0</div>
+<div class="stat-sub">ítems cargados</div>
 </div>
-</div>
-
-<div class="card">
-<h2>2. Modificar precios por categoría</h2>
-<div class="cats">
-<div class="cat"><h3>💊 Analgésicos</h3><input type="number" id="pAnalgesicos" value="0" step="0.01"><small>Porcentaje de aumento/disminución.</small></div>
-<div class="cat"><h3>💊 Genéricos</h3><input type="number" id="pGenericos" value="0" step="0.01"><small>Porcentaje de aumento/disminución.</small></div>
-<div class="cat"><h3>🧴 Accesorios</h3><input type="number" id="pAccesorios" value="0" step="0.01"><small>Porcentaje de aumento/disminución.</small></div>
-</div><br>
-<div class="buttons"><button class="primary" id="applyBtn">Aplicar cambios</button><button class="gray" id="resetBtn">Restablecer precios</button></div>
-</div>
-
-<div class="card">
-<h2>3. Exportación a Google Sheets</h2>
-<div class="selection-box">
-<div><b>Seleccioná qué artículos querés enviar.</b></div>
-<div class="small">Los artículos desmarcados permanecen en esta aplicación, pero NO se envían a Google Sheets.</div>
-<div style="margin-top:8px"><span class="selection-count" id="selectionInfo">0 de 0 artículos se enviarán a Google Sheets.</span></div>
-</div>
-<div class="buttons">
-<button class="primary" id="allBtn">☑️ Exportar todos</button>
-<button class="gray" id="noneBtn">🚫 No exportar ninguno</button>
-<button class="orange" id="invertBtn">🔄 Invertir selección</button>
-<button class="success" id="copyBtn">📋 Copiar seleccionados</button>
-<button class="teal" id="syncBtn">🔄 Sincronizar con Google Sheets</button>
+<div class="stat-card">
+<div class="stat-badge">
+<span class="stat-dot" style="background:#06b6d4;"></span> 🧴 Accesorios
+        </div>
+<div class="stat-val" id="totalAccesorios">0</div>
+<div class="stat-sub">ítems cargados</div>
 </div>
 </div>
-
-<div class="card">
-<h2>4. Lista de artículos</h2>
-<p class="small">Usá la casilla <b>Enviar a Sheets</b> de cada artículo para excluirlo individualmente.</p>
-<input class="search" id="buscar" type="text" placeholder="Buscar por código, producto o categoría...">
-<br><br>
-<div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Precio de costo</th><th>Precio de venta</th><th>Categoría</th><th>Enviar a Sheets</th></tr></thead><tbody id="tablaBody"><tr><td colspan="6" style="text-align:center;padding:30px;color:#777">Todavía no cargaste ningún PDF.</td></tr></tbody></table></div>
+<!-- 1. Cargar PDF -->
+<section class="card">
+<div class="card-header">
+<div class="card-title">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+          1. Cargar Lista PDF
+        </div>
+<span style="font-size:11px; color:#94a3b8; font-weight:600;">Oficial / Costos</span>
+</div>
+<div class="upload-zone">
+<input accept=".pdf,application/pdf" id="pdfFile" type="file"/>
+<div class="upload-icon-circle">
+<svg fill="none" height="22" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="22">
+<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+<polyline points="14 2 14 8 20 8"></polyline>
+<line x1="16" x2="8" y1="13" y2="13"></line>
+<line x1="16" x2="8" y1="17" y2="17"></line>
+<polyline points="10 9 9 9 8 9"></polyline>
+</svg>
+</div>
+<div class="upload-main-text">Toca para seleccionar PDF</div>
+<div class="upload-sub-text">Procesamiento automático de artículos y costos</div>
+</div>
+<div class="progress-box" id="progressWrap">
+<div class="progress-bar-bg">
+<div class="progress-bar-fill" id="progressBar"></div>
+</div>
+<div class="progress-info">
+<span id="progressStatus">Procesando páginas...</span>
+<span id="progressPct">0%</span>
 </div>
 </div>
-
+</section>
+<!-- 2. Márgenes de Venta -->
+<section class="card">
+<div class="card-header">
+<div class="card-title">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+          2. Márgenes de Venta (%)
+        </div>
+<button id="resetBtn" style="border:none; background:transparent; font-size:11px; font-weight:700; color:#2563eb; cursor:pointer;">Restablecer</button>
+</div>
+<!-- Analgésicos -->
+<div class="cat-item">
+<div class="cat-top">
+<span class="cat-label">💊 Analgésicos</span>
+<div class="cat-input-wrap">
+<input id="pAnalgesicos" step="0.01" type="number" value="0"/>
+<span>%</span>
+</div>
+</div>
+<div class="pill-presets">
+<button class="preset-chip" onclick="addPct('pAnalgesicos', 10)">+10%</button>
+<button class="preset-chip" onclick="addPct('pAnalgesicos', 20)">+20%</button>
+<button class="preset-chip" onclick="addPct('pAnalgesicos', 30)">+30%</button>
+<button class="preset-chip" onclick="addPct('pAnalgesicos', 50)">+50%</button>
+</div>
+</div>
+<!-- Genéricos -->
+<div class="cat-item">
+<div class="cat-top">
+<span class="cat-label">🧬 Genéricos</span>
+<div class="cat-input-wrap">
+<input id="pGenericos" step="0.01" type="number" value="0"/>
+<span>%</span>
+</div>
+</div>
+<div class="pill-presets">
+<button class="preset-chip" onclick="addPct('pGenericos', 10)">+10%</button>
+<button class="preset-chip" onclick="addPct('pGenericos', 20)">+20%</button>
+<button class="preset-chip" onclick="addPct('pGenericos', 30)">+30%</button>
+<button class="preset-chip" onclick="addPct('pGenericos', 50)">+50%</button>
+</div>
+</div>
+<!-- Accesorios -->
+<div class="cat-item">
+<div class="cat-top">
+<span class="cat-label">🧴 Accesorios</span>
+<div class="cat-input-wrap">
+<input id="pAccesorios" step="0.01" type="number" value="0"/>
+<span>%</span>
+</div>
+</div>
+<div class="pill-presets">
+<button class="preset-chip" onclick="addPct('pAccesorios', 10)">+10%</button>
+<button class="preset-chip" onclick="addPct('pAccesorios', 20)">+20%</button>
+<button class="preset-chip" onclick="addPct('pAccesorios', 30)">+30%</button>
+<button class="preset-chip" onclick="addPct('pAccesorios', 50)">+50%</button>
+</div>
+</div>
+<button class="btn-apply" id="applyBtn">
+<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="15"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        Aplicar Porcentajes a Artículos
+      </button>
+</section>
+<!-- 3. Lista y Selección -->
+<section class="card">
+<div class="card-header">
+<div class="card-title">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          3. Selección de Catálogo
+        </div>
+<span id="selectionBadge" style="font-size:11px; font-weight:700; color:#2563eb; background:#eff6ff; padding:2px 8px; border-radius:10px;">0 selec.</span>
+</div>
+<div class="filter-tools">
+<button class="filter-btn" id="allBtn">☑️ Todos</button>
+<button class="filter-btn" id="noneBtn">🚫 Ninguno</button>
+<button class="filter-btn" id="invertBtn">🔄 Invertir</button>
+</div>
+<div class="search-input-wrap">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
+<input class="search-input" id="buscar" placeholder="Buscar por código, nombre o categoría..." type="text"/>
+</div>
+<div class="product-list" id="productList">
+<div class="empty-state">
+<svg fill="none" height="36" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24" width="36"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
+<div class="empty-title">Sin lista de artículos</div>
+<div class="empty-sub">Sube un PDF o carga tus datos desde Google Sheets.</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Barra Fija Inferior (Acciones Rápidas con el pulgar) -->
+<div class="bottom-bar">
+<button class="btn-bottom btn-bottom-copy" id="copyBtn">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="13" rx="2" ry="2" width="13" x="9" y="9"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      Copiar
+    </button>
+<button class="btn-bottom btn-bottom-sync" id="syncBtn">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+      Sincronizar Sheets
+    </button>
+</div>
+<!-- Modal Bottom Sheet (Configuración URL Google Sheets) -->
+<div class="modal-overlay" id="settingsModal">
+<div class="bottom-sheet">
+<div class="sheet-handle"></div>
+<div class="sheet-title">
+<span>Conexión Google Sheets</span>
+<button id="closeModalBtn" style="background:none; border:none; color:#64748b; font-size:20px; font-weight:700; cursor:pointer;">×</button>
+</div>
+<p style="font-size:12px; color:#64748b; margin:0 0 12px 0;">URL del script Web App implementado en Google Sheets (terminada en <code>/exec</code>):</p>
+<input class="sheet-input" id="webhookUrl" placeholder="https://script.google.com/macros/s/.../exec" type="url"/>
+<div class="sheet-btns">
+<button class="btn-bottom btn-bottom-copy" id="saveUrlBtn">Guardar URL</button>
+<button class="btn-bottom btn-bottom-sync" id="loadSheetsBtn">📥 Cargar de Sheets</button>
+</div>
+</div>
+</div>
+<!-- Feedback Toast -->
+<div class="toast" id="toastBox">
+<span id="toastMsg">Mensaje informativo</span>
+</div>
+</div>
 <script>
-if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-const LS_PRODUCTS='gp_productos_v3', LS_PCTS='gp_porcentajes_v3', LS_URL='gp_sheets_url_v3', LS_SYNC='gp_ultima_sync_v3';
-let productos=[], porcentajes={Analgesicos:0,Genericos:0,Accesorios:0};
-const $=id=>document.getElementById(id);
-function save(){try{localStorage.setItem(LS_PRODUCTS,JSON.stringify(productos));localStorage.setItem(LS_PCTS,JSON.stringify(porcentajes));}catch(e){console.warn(e)}}
-function load(){try{const p=JSON.parse(localStorage.getItem(LS_PRODUCTS)||'null'), pc=JSON.parse(localStorage.getItem(LS_PCTS)||'null');if(pc){porcentajes={Analgesicos:Number(pc.Analgesicos)||0,Genericos:Number(pc.Genericos)||0,Accesorios:Number(pc.Accesorios)||0};$('pAnalgesicos').value=porcentajes.Analgesicos;$('pGenericos').value=porcentajes.Genericos;$('pAccesorios').value=porcentajes.Accesorios}if(Array.isArray(p)&&p.length){productos=p.map(normalizarProducto);render();stats();$('titulo').textContent='Gestor de Precios - '+productos.length+' artículos';setStatus('Se recuperaron '+productos.length+' artículos guardados en este dispositivo.','ok')}}catch(e){console.warn(e)}}
-function normalizarProducto(p){return{codigo:String(p.codigo||''),producto:String(p.producto||''),costo:Number(p.costo)||0,venta:Number(p.venta)||0,categoria:p.categoria||'General',noSync:p.noSync===true||p.noExport===true}}
-function setStatus(t,c=''){$('syncStatus').className='status '+c;$('syncStatus').textContent=t}
-function money(n){return Number(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2})}
-function escapeHTML(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function escapeJS(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
-function stats(){$('totalArticulos').textContent=productos.length;$('totalAnalgesicos').textContent=productos.filter(p=>p.categoria==='Analgesicos').length;$('totalGenericos').textContent=productos.filter(p=>p.categoria==='Genericos').length;$('totalAccesorios').textContent=productos.filter(p=>p.categoria==='Accesorios').length;}
-function updateSelection(){const n=productos.filter(p=>!p.noSync).length;$('selectionInfo').textContent=`${n} de ${productos.length} artículos se enviarán a Google Sheets.`}
-function render(){const q=$('buscar').value.toLowerCase().trim(), tbody=$('tablaBody');tbody.innerHTML='';const arr=productos.filter(p=>p.codigo.toLowerCase().includes(q)||p.producto.toLowerCase().includes(q)||p.categoria.toLowerCase().includes(q));if(!arr.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:#777">No se encontraron artículos.</td></tr>';updateSelection();return}arr.forEach(p=>{const tr=document.createElement('tr');if(p.noSync)tr.className='excluded';tr.innerHTML=`<td>${escapeHTML(p.codigo)}</td><td>${escapeHTML(p.producto)}</td><td>$ ${money(p.costo)}</td><td><input class="price" type="number" value="${p.venta}" data-code="${escapeHTML(p.codigo)}"></td><td>${escapeHTML(p.categoria)}</td><td style="text-align:center"><input class="check" type="checkbox" ${p.noSync?'':'checked'} title="${p.noSync?'No se enviará':'Se enviará'}"></td>`;const price=tr.querySelector('.price');price.addEventListener('change',()=>{p.venta=Number(price.value)||0;save()});const check=tr.querySelector('.check');check.addEventListener('change',()=>{p.noSync=!check.checked;save();render()});tbody.appendChild(tr)});updateSelection()}
-function apply(){porcentajes.Analgesicos=Number($('pAnalgesicos').value)||0;porcentajes.Genericos=Number($('pGenericos').value)||0;porcentajes.Accesorios=Number($('pAccesorios').value)||0;productos.forEach(p=>{const x=porcentajes[p.categoria]||0;p.venta=Math.round(p.costo*(1+x/100))});save();render();setStatus('Precios actualizados.','ok')}
-function reset(){productos.forEach(p=>p.venta=p.costo);porcentajes={Analgesicos:0,Genericos:0,Accesorios:0};$('pAnalgesicos').value=0;$('pGenericos').value=0;$('pAccesorios').value=0;save();render();setStatus('Precios restablecidos.','ok')}
-function selectAll(){productos.forEach(p=>p.noSync=false);save();render()}
-function selectNone(){productos.forEach(p=>p.noSync=true);save();render()}
-function invert(){productos.forEach(p=>p.noSync=!p.noSync);save();render()}
-function parsePrice(s){let x=String(s||'').replace(/\$/g,'').replace(/\s/g,'').trim();if(!x)return 0;if(x.includes(',')&&x.includes('.'))x=x.replace(/\./g,'').replace(',','.');else if(x.includes(','))x=x.replace(',','.');else if((x.match(/\./g)||[]).length>1)x=x.replace(/\./g,'');return parseFloat(x)||0}
-function isPrice(s){return /^\$?[\d.,]+$/.test(s)&&/\d/.test(s)}
-function cleanLine(s){return s.replace(/\|/g,' ').replace(/\s+/g,' ').trim()}
-function isHeader(s){const x=s.toLowerCase();return !x||x.includes('descripcion')||x.includes('articulo')||x.includes('co-fi')||x.includes('vendedores')||x.includes('pagina')||x.includes('lista :')||/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(x)}
-function processLines(lines){let cat='General',code='',desc=[];for(let raw of lines){let line=cleanLine(raw);if(isHeader(line))continue;let low=line.toLowerCase();if(/analg[eé]sicos?|analgesicos?/.test(low)){cat='Analgesicos';continue}if(/gen[eé]ricos?|genericos?/.test(low)){cat='Genericos';continue}if(/accesorios?/.test(low)){cat='Accesorios';continue}let t=line.split(/\s+/), last=t[t.length-1];if(isPrice(last)){const cost=parsePrice(last);t.pop();let rest=t.join(' ');let m=rest.match(/^(\d+\/\d+|\d{3,})\s*(.*)$/);if(m){code=m[1];if(m[2])desc.push(m[2])}else if(rest)desc.push(rest);let d=desc.join(' ').replace(/\bx1\b/gi,'').replace(/\s+/g,' ').trim();if(cost>0&&d){productos.push({codigo:code||'S/C',producto:d,costo:cost,venta:cost,categoria:cat,noSync:false})}code='';desc=[]}else{let m=line.match(/^(\d+\/\d+|\d{3,})\s*(.*)$/);if(m){code=m[1];if(m[2]&&m[2].toLowerCase()!=='x1')desc.push(m[2])}else if(low!=='x1')desc.push(line)}}}
-async function readPDF(file){if(!window.pdfjsLib){alert('No se pudo cargar el lector PDF. Abrí la aplicación con conexión a Internet una vez y volvé a intentarlo.');return}const oldMap=new Map(productos.map(p=>[String(p.codigo),p.noSync===true]));productos=[];$('progressWrap').style.display='block';$('progressBar').style.width='0%';$('progressStatus').textContent='Leyendo archivo PDF...';try{const buffer=await file.arrayBuffer();const pdf=await pdfjsLib.getDocument({data:buffer}).promise;let lines=[];for(let n=1;n<=pdf.numPages;n++){const page=await pdf.getPage(n), content=await page.getTextContent();let items=content.items.map(i=>({str:i.str,x:i.transform[4],y:i.transform[5]}));items.sort((a,b)=>Math.abs(a.y-b.y)>4?b.y-a.y:a.x-b.x);let line='',y=null;for(const it of items){if(!it.str.trim())continue;if(y===null||Math.abs(it.y-y)>4){if(line)lines.push(line.trim());line=it.str;y=it.y}else line+=' '+it.str}if(line)lines.push(line.trim());$('progressBar').style.width=Math.round(n/pdf.numPages*100)+'%';$('progressStatus').textContent=`Leyendo página ${n} de ${pdf.numPages}...`;await new Promise(r=>setTimeout(r,0))}processLines(lines);productos.forEach(p=>p.noSync=oldMap.get(String(p.codigo))===true);save();stats();render();$('titulo').textContent='Gestor de Precios - '+productos.length+' artículos';$('progressStatus').innerHTML='<span class="ok">PDF procesado correctamente.</span> Se encontraron '+productos.length+' artículos.';if(!productos.length)alert('El PDF se abrió correctamente, pero no se encontraron artículos con el formato esperado.');else setStatus('Lista PDF cargada correctamente.','ok')}catch(e){console.error(e);$('progressStatus').innerHTML='<span class="error">Error al procesar el PDF.</span>';alert('No se pudo leer el PDF. Probá con el mismo PDF que usabas anteriormente o enviámelo para adaptar el lector.')}}
-async function copySheets(){const ex=productos.filter(p=>!p.noSync);if(!ex.length){alert('No hay artículos seleccionados para exportar.');return}let txt='Código\tProducto\tPrecio de costo\tPrecio de venta\tCategoría\n'+ex.map(p=>`${p.codigo}\t${p.producto}\t${p.costo}\t${p.venta}\t${p.categoria}`).join('\n');try{await navigator.clipboard.writeText(txt);alert(`Se copiaron ${ex.length} artículos. Los excluidos no fueron incluidos.`)}catch(e){alert('Chrome no permitió copiar automáticamente.')}}
-async function syncSheets(){const url=$('webhookUrl').value.trim();if(!url){setStatus('Pegá primero la URL de tu Web App.','error');return}const ex=productos.filter(p=>!p.noSync);if(!ex.length){setStatus('No hay artículos seleccionados para enviar.','error');return}$('syncBtn').disabled=true;setStatus('Sincronizando con Google Sheets...');try{const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({productos:ex.map(p=>({codigo:p.codigo,producto:p.producto,costo:p.costo,precio:p.venta,categoria:p.categoria}))})});const data=await res.json();if(!data.ok)throw new Error(data.error||'Error desconocido');localStorage.setItem(LS_SYNC,new Date().toISOString());$('syncPill').textContent='Última sincronización: '+new Date().toLocaleString('es-AR');setStatus(`Listo: se enviaron ${ex.length} artículos. Los excluidos no se enviaron.`,'ok')}catch(e){setStatus('Error al sincronizar: '+e.message,'error')}finally{$('syncBtn').disabled=false}}
-async function loadSheets(){const url=$('webhookUrl').value.trim();if(!url){setStatus('Pegá primero la URL de tu Web App.','error');return}setStatus('Cargando desde Sheets...');try{const old=new Map(productos.map(p=>[String(p.codigo),p.noSync===true]));const r=await fetch(url);const d=await r.json();if(!d.ok)throw new Error(d.error||'Error desconocido');productos=(d.productos||[]).map(p=>({codigo:String(p.codigo||''),producto:p.producto||'',costo:Number(p.costo)||0,venta:Number(p.precio)||0,categoria:p.categoria||'General',noSync:old.get(String(p.codigo))===true}));save();stats();render();$('titulo').textContent='Gestor de Precios - '+productos.length+' artículos';setStatus(`Se cargaron ${productos.length} productos desde Sheets.`,'ok')}catch(e){setStatus('No se pudo cargar: '+e.message,'error')}}
-$('pdfFile').addEventListener('change',e=>{if(e.target.files[0])readPDF(e.target.files[0])});$('buscar').addEventListener('input',render);$('applyBtn').onclick=apply;$('resetBtn').onclick=reset;$('allBtn').onclick=selectAll;$('noneBtn').onclick=selectNone;$('invertBtn').onclick=invert;$('copyBtn').onclick=copySheets;$('syncBtn').onclick=syncSheets;$('loadSheetsBtn').onclick=loadSheets;$('saveUrlBtn').onclick=()=>{localStorage.setItem(LS_URL,$('webhookUrl').value.trim());setStatus('URL guardada.','ok')};
-$('webhookUrl').value=localStorage.getItem(LS_URL)||'';const last=localStorage.getItem(LS_SYNC);if(last)$('syncPill').textContent='Última sincronización: '+new Date(last).toLocaleString('es-AR');load();
-let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').classList.add('show')});$('installBtn').onclick=async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$('installBtn').classList.remove('show')};window.addEventListener('appinstalled',()=>{$('installBtn').classList.remove('show')});
-if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});reg.update()}catch(e){console.warn('SW',e)}})}
-window.addEventListener('beforeunload',save);
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  }
+
+  const LS_PRODUCTS = 'gp_productos_v3';
+  const LS_PCTS = 'gp_porcentajes_v3';
+  const LS_URL = 'gp_sheets_url_v3';
+  const LS_SYNC = 'gp_ultima_sync_v3';
+
+  let productos = [];
+  let porcentajes = { Analgesicos: 0, Genericos: 0, Accesorios: 0 };
+
+  const $ = id => document.getElementById(id);
+
+  function showToast(msg) {
+    const t = $('toastBox');
+    $('toastMsg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function addPct(id, val) {
+    const el = $(id);
+    el.value = (parseFloat(el.value || 0) + val).toFixed(1).replace(/\.0$/, '');
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(LS_PRODUCTS, JSON.stringify(productos));
+      localStorage.setItem(LS_PCTS, JSON.stringify(porcentajes));
+    } catch(e) {
+      console.warn(e);
+    }
+  }
+
+  function load() {
+    try {
+      const p = JSON.parse(localStorage.getItem(LS_PRODUCTS) || 'null');
+      const pc = JSON.parse(localStorage.getItem(LS_PCTS) || 'null');
+      if (pc) {
+        porcentajes = {
+          Analgesicos: Number(pc.Analgesicos) || 0,
+          Genericos: Number(pc.Genericos) || 0,
+          Accesorios: Number(pc.Accesorios) || 0
+        };
+        $('pAnalgesicos').value = porcentajes.Analgesicos;
+        $('pGenericos').value = porcentajes.Genericos;
+        $('pAccesorios').value = porcentajes.Accesorios;
+      }
+      if (Array.isArray(p) && p.length) {
+        productos = p.map(normalizarProducto);
+        render();
+        stats();
+        showToast(`Se cargaron ${productos.length} artículos guardados`);
+      }
+    } catch(e) {
+      console.warn(e);
+    }
+  }
+
+  function normalizarProducto(p) {
+    return {
+      codigo: String(p.codigo || ''),
+      producto: String(p.producto || ''),
+      costo: Number(p.costo) || 0,
+      venta: Number(p.venta) || 0,
+      categoria: p.categoria || 'General',
+      noSync: p.noSync === true || p.noExport === true
+    };
+  }
+
+  function money(n) {
+    return Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[m]));
+  }
+
+  function stats() {
+    $('totalArticulos').textContent = productos.length;
+    $('totalAnalgesicos').textContent = productos.filter(p => p.categoria === 'Analgesicos').length;
+    $('totalGenericos').textContent = productos.filter(p => p.categoria === 'Genericos').length;
+    $('totalAccesorios').textContent = productos.filter(p => p.categoria === 'Accesorios').length;
+  }
+
+  function updateSelection() {
+    const n = productos.filter(p => !p.noSync).length;
+    $('selectionBadge').textContent = `${n} de ${productos.length} selec.`;
+  }
+
+  function render() {
+    const q = $('buscar').value.toLowerCase().trim();
+    const container = $('productList');
+    container.innerHTML = '';
+
+    const arr = productos.filter(p =>
+      p.codigo.toLowerCase().includes(q) ||
+      p.producto.toLowerCase().includes(q) ||
+      p.categoria.toLowerCase().includes(q)
+    );
+
+    if (!arr.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <div class="empty-title">Sin resultados</div>
+          <div class="empty-sub">No se encontraron artículos que coincidan con la búsqueda.</div>
+        </div>
+      `;
+      updateSelection();
+      return;
+    }
+
+    arr.forEach(p => {
+      const card = document.createElement('div');
+      card.className = `prod-card ${p.noSync ? 'excluded' : ''}`;
+      card.innerHTML = `
+        <div class="prod-info">
+          <div class="prod-badges">
+            <span class="prod-code">${escapeHTML(p.codigo)}</span>
+            <span class="prod-cat-pill">${escapeHTML(p.categoria)}</span>
+          </div>
+          <div class="prod-title" title="${escapeHTML(p.producto)}">${escapeHTML(p.producto)}</div>
+          <div class="prod-prices">
+            <span class="cost-tag">Costo: <b>$${money(p.costo)}</b></span>
+            <div class="sell-edit-wrap" title="Editar precio de venta manual">
+              <span class="sell-edit-label">Venta: $</span>
+              <input type="number" class="sell-edit-input" value="${Number(p.venta) || 0}" step="any" min="0" placeholder="0">
+            </div>
+          </div>
+        </div>
+        <label class="switch" title="Exportar a Sheets">
+          <input type="checkbox" class="check-toggle" ${p.noSync ? '' : 'checked'}>
+          <span class="slider"></span>
+        </label>
+      `;
+
+      const check = card.querySelector('.check-toggle');
+      check.addEventListener('change', () => {
+        p.noSync = !check.checked;
+        if (p.noSync) {
+          card.classList.add('excluded');
+        } else {
+          card.classList.remove('excluded');
+        }
+        save();
+        updateSelection();
+      });
+
+      const sellInput = card.querySelector('.sell-edit-input');
+      const updateManualSellPrice = (e) => {
+        const val = parseFloat(e.target.value);
+        p.venta = isNaN(val) ? 0 : val;
+        save();
+      };
+      sellInput.addEventListener('input', updateManualSellPrice);
+      sellInput.addEventListener('change', (e) => {
+        updateManualSellPrice(e);
+        showToast(`Precio actualizado: $${money(p.venta)}`);
+      });
+
+      container.appendChild(card);
+    });
+
+    updateSelection();
+  }
+
+  function apply() {
+    porcentajes.Analgesicos = Number($('pAnalgesicos').value) || 0;
+    porcentajes.Genericos = Number($('pGenericos').value) || 0;
+    porcentajes.Accesorios = Number($('pAccesorios').value) || 0;
+
+    productos.forEach(p => {
+      const x = porcentajes[p.categoria] || 0;
+      p.venta = Math.round(p.costo * (1 + x / 100));
+    });
+
+    save();
+    render();
+    showToast('Precios de venta calculados y aplicados.');
+  }
+
+  function reset() {
+    productos.forEach(p => p.venta = p.costo);
+    porcentajes = { Analgesicos: 0, Genericos: 0, Accesorios: 0 };
+    $('pAnalgesicos').value = 0;
+    $('pGenericos').value = 0;
+    $('pAccesorios').value = 0;
+    save();
+    render();
+    showToast('Precios restablecidos al costo base.');
+  }
+
+  function selectAll() {
+    productos.forEach(p => p.noSync = false);
+    save();
+    render();
+    showToast('Todos los artículos seleccionados');
+  }
+
+  function selectNone() {
+    productos.forEach(p => p.noSync = true);
+    save();
+    render();
+    showToast('Todos los artículos desmarcados');
+  }
+
+  function invert() {
+    productos.forEach(p => p.noSync = !p.noSync);
+    save();
+    render();
+    showToast('Selección invertida');
+  }
+
+  /* Parser de PDF */
+  function parsePrice(s) {
+    let x = String(s || '').replace(/\$/g, '').replace(/\s/g, '').trim();
+    if (!x) return 0;
+    if (x.includes(',') && x.includes('.')) x = x.replace(/\./g, '').replace(',', '.');
+    else if (x.includes(',')) x = x.replace(',', '.');
+    else if ((x.match(/\./g) || []).length > 1) x = x.replace(/\./g, '');
+    return parseFloat(x) || 0;
+  }
+
+  function isPrice(s) {
+    return /^\$?[\d.,]+$/.test(s) && /\d/.test(s);
+  }
+
+  function cleanLine(s) {
+    return s.replace(/\|/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function isHeader(s) {
+    const x = s.toLowerCase();
+    return !x || x.includes('descripcion') || x.includes('articulo') || x.includes('co-fi') || x.includes('vendedores') || x.includes('pagina') || x.includes('lista :') || /^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(x);
+  }
+
+  function processLines(lines) {
+    let cat = 'General', code = '', desc = [];
+    for (let raw of lines) {
+      let line = cleanLine(raw);
+      if (isHeader(line)) continue;
+      let low = line.toLowerCase();
+      if (/analg[eé]sicos?|analgesicos?/.test(low)) { cat = 'Analgesicos'; continue; }
+      if (/gen[eé]ricos?|genericos?/.test(low)) { cat = 'Genericos'; continue; }
+      if (/accesorios?/.test(low)) { cat = 'Accesorios'; continue; }
+
+      let t = line.split(/\s+/), last = t[t.length - 1];
+      if (isPrice(last)) {
+        const cost = parsePrice(last);
+        t.pop();
+        let rest = t.join(' ');
+        let m = rest.match(/^(\d+\/\d+|\d{3,})\s*(.*)$/);
+        if (m) {
+          code = m[1];
+          if (m[2]) desc.push(m[2]);
+        } else if (rest) desc.push(rest);
+        
+        let d = desc.join(' ').replace(/\bx1\b/gi, '').replace(/\s+/g, ' ').trim();
+        if (cost > 0 && d) {
+          productos.push({
+            codigo: code || 'S/C',
+            producto: d,
+            costo: cost,
+            venta: cost,
+            categoria: cat,
+            noSync: false
+          });
+        }
+        code = ''; desc = [];
+      } else {
+        let m = line.match(/^(\d+\/\d+|\d{3,})\s*(.*)$/);
+        if (m) {
+          code = m[1];
+          if (m[2] && m[2].toLowerCase() !== 'x1') desc.push(m[2]);
+        } else if (low !== 'x1') desc.push(line);
+      }
+    }
+  }
+
+  async function readPDF(file) {
+    if (!window.pdfjsLib) {
+      alert('El lector PDF no está listo. Verifica tu conexión a internet.');
+      return;
+    }
+    const oldMap = new Map(productos.map(p => [String(p.codigo), p.noSync === true]));
+    productos = [];
+    $('progressWrap').style.display = 'block';
+    $('progressBar').style.width = '0%';
+    $('progressPct').textContent = '0%';
+    $('progressStatus').textContent = 'Leyendo archivo PDF...';
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      let lines = [];
+
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const page = await pdf.getPage(n);
+        const content = await page.getTextContent();
+        let items = content.items.map(i => ({ str: i.str, x: i.transform[4], y: i.transform[5] }));
+        items.sort((a, b) => Math.abs(a.y - b.y) > 4 ? b.y - a.y : a.x - b.x);
+
+        let line = '', y = null;
+        for (const it of items) {
+          if (!it.str.trim()) continue;
+          if (y === null || Math.abs(it.y - y) > 4) {
+            if (line) lines.push(line.trim());
+            line = it.str;
+            y = it.y;
+          } else {
+            line += ' ' + it.str;
+          }
+        }
+        if (line) lines.push(line.trim());
+
+        const pct = Math.round((n / pdf.numPages) * 100);
+        $('progressBar').style.width = pct + '%';
+        $('progressPct').textContent = pct + '%';
+        $('progressStatus').textContent = `Página ${n} de ${pdf.numPages}...`;
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      processLines(lines);
+      productos.forEach(p => p.noSync = oldMap.get(String(p.codigo)) === true);
+      save();
+      stats();
+      render();
+      setTimeout(() => $('progressWrap').style.display = 'none', 1200);
+      showToast(`¡Listo! Se extrajeron ${productos.length} artículos del PDF`);
+    } catch(e) {
+      console.error(e);
+      $('progressStatus').textContent = 'Error al leer el PDF';
+      showToast('No se pudo procesar el PDF');
+    }
+  }
+
+  /* Copiar al Portapapeles */
+  async function copySheets() {
+    const ex = productos.filter(p => !p.noSync);
+    if (!ex.length) {
+      showToast('No hay artículos seleccionados para copiar.');
+      return;
+    }
+    let txt = 'Código\tProducto\tPrecio de costo\tPrecio de venta\tCategoría\n' +
+      ex.map(p => `${p.codigo}\t${p.producto}\t${p.costo}\t${p.venta}\t${p.categoria}`).join('\n');
+    try {
+      await navigator.clipboard.writeText(txt);
+      showToast(`Copiados ${ex.length} artículos al portapapeles`);
+    } catch(e) {
+      showToast('No se pudo copiar automáticamente.');
+    }
+  }
+
+  /* Sincronización Google Sheets */
+  async function syncSheets() {
+    const url = $('webhookUrl').value.trim();
+    if (!url) {
+      $('settingsModal').classList.add('open');
+      showToast('Configura primero la URL de Google Apps Script');
+      return;
+    }
+    const ex = productos.filter(p => !p.noSync);
+    const excluidos = productos.filter(p => p.noSync).map(p => p.codigo);
+    if (!ex.length) {
+      showToast('No hay artículos seleccionados para enviar.');
+      return;
+    }
+
+    $('syncBtn').disabled = true;
+    showToast('Sincronizando con Google Sheets...');
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          productos: ex.map(p => ({
+            codigo: p.codigo,
+            producto: p.producto,
+            costo: p.costo,
+            precio: p.venta,
+            categoria: p.categoria
+          })),
+          excluidos: excluidos
+        })
+      });
+
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Error desconocido');
+
+      const now = new Date();
+      localStorage.setItem(LS_SYNC, now.toISOString());
+      $('statusDot').classList.add('active');
+      $('syncText').textContent = 'Sincronizado ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      showToast(`¡Éxito! Se enviaron ${ex.length} artículos`);
+    } catch(e) {
+      showToast('Error de sincronización: ' + e.message);
+    } finally {
+      $('syncBtn').disabled = false;
+    }
+  }
+
+  /* Cargar datos desde Google Sheets */
+  async function loadSheets() {
+    const url = $('webhookUrl').value.trim();
+    if (!url) {
+      showToast('Introduce primero la URL de Apps Script');
+      return;
+    }
+
+    showToast('Cargando catálogo desde Google Sheets...');
+    try {
+      const old = new Map(productos.map(p => [String(p.codigo), p.noSync === true]));
+      const r = await fetch(url);
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || 'Error desconocido');
+
+      productos = (d.productos || []).map(p => ({
+        codigo: String(p.codigo || ''),
+        producto: p.producto || '',
+        costo: Number(p.costo) || 0,
+        venta: Number(p.precio) || 0,
+        categoria: p.categoria || 'General',
+        noSync: old.get(String(p.codigo)) === true
+      }));
+
+      save();
+      stats();
+      render();
+      $('settingsModal').classList.remove('open');
+      showToast(`Se cargaron ${productos.length} artículos desde Sheets`);
+    } catch(e) {
+      showToast('Error al cargar: ' + e.message);
+    }
+  }
+
+  // Listeners
+  $('pdfFile').addEventListener('change', e => {
+    if (e.target.files[0]) readPDF(e.target.files[0]);
+  });
+  $('buscar').addEventListener('input', render);
+  $('applyBtn').onclick = apply;
+  $('resetBtn').onclick = reset;
+  $('allBtn').onclick = selectAll;
+  $('noneBtn').onclick = selectNone;
+  $('invertBtn').onclick = invert;
+  $('copyBtn').onclick = copySheets;
+  $('syncBtn').onclick = syncSheets;
+  $('loadSheetsBtn').onclick = loadSheets;
+
+  // Modal URL Config
+  $('openSettingsBtn').onclick = () => $('settingsModal').classList.add('open');
+  $('closeModalBtn').onclick = () => $('settingsModal').classList.remove('open');
+  $('settingsModal').onclick = e => { if (e.target === $('settingsModal')) $('settingsModal').classList.remove('open'); };
+
+  $('saveUrlBtn').onclick = () => {
+    const val = $('webhookUrl').value.trim();
+    localStorage.setItem(LS_URL, val);
+    showToast('URL de Apps Script guardada');
+    $('settingsModal').classList.remove('open');
+  };
+
+  // Inicialización
+  $('webhookUrl').value = localStorage.getItem(LS_URL) || '';
+  const last = localStorage.getItem(LS_SYNC);
+  if (last) {
+    $('statusDot').classList.add('active');
+    $('syncText').textContent = 'Sync ' + new Date(last).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  load();
+  window.addEventListener('beforeunload', save);
 </script>
-</body>
-</html>
+</body></html>
