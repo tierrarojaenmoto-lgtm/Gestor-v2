@@ -12,6 +12,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
     :root {
       --primary: #2563eb;
@@ -659,6 +660,17 @@
       color: white;
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
+    .btn-bottom-pdf {
+      background: linear-gradient(135deg, #059669, #047857);
+      color: white;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+    }
+
+    @media (max-width: 420px) {
+      .bottom-bar { gap: 6px; padding-left: 10px; padding-right: 10px; }
+      .btn-bottom { padding: 11px 6px; font-size: 11px; gap: 4px; }
+      .btn-bottom svg { width: 15px; height: 15px; flex-shrink: 0; }
+    }
 
     /* Config Bottom Sheet */
     .modal-overlay {
@@ -945,6 +957,10 @@
 <button class="btn-bottom btn-bottom-sync" id="syncBtn">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
       Sincronizar Sheets
+    </button>
+<button class="btn-bottom btn-bottom-pdf" id="exportPdfBtn" title="Exportar catálogo de precios en PDF">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><path d="M6 9V3h12v6"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect height="8" rx="1" width="10" x="7" y="13"></rect></svg>
+      Exportar PDF
     </button>
 </div>
 <!-- Modal Bottom Sheet (Configuración URL Google Sheets) -->
@@ -1409,6 +1425,171 @@
     }
   }
 
+  /* Exportar catálogo de precios a PDF
+     - Usa solamente artículos seleccionados (los que no están excluidos).
+     - Respeta los precios de venta ya modificados manualmente o mediante porcentajes.
+     - Diseño A4 en cuadrícula de 2 columnas, con tipografía grande y precios destacados.
+  */
+  function exportCatalogPDF() {
+    // Artículos seleccionados, ordenados por categoría y luego por nombre.
+    const categoryOrder = {
+      'analgesicos': 0,
+      'analgésicos': 0,
+      'genericos': 1,
+      'genéricos': 1,
+      'accesorios': 2
+    };
+
+    const selected = productos
+      .filter(p => !p.noSync && Number(p.venta) > 0)
+      .sort((a, b) => {
+        const catA = String(a.categoria || 'General').trim().toLowerCase();
+        const catB = String(b.categoria || 'General').trim().toLowerCase();
+
+        const orderA = Object.prototype.hasOwnProperty.call(categoryOrder, catA)
+          ? categoryOrder[catA] : 99;
+        const orderB = Object.prototype.hasOwnProperty.call(categoryOrder, catB)
+          ? categoryOrder[catB] : 99;
+
+        if (orderA !== orderB) return orderA - orderB;
+
+        return String(a.producto || '').localeCompare(
+          String(b.producto || ''),
+          'es',
+          { sensitivity: 'base', numeric: true }
+        );
+      });
+
+    if (!selected.length) {
+      showToast('No hay artículos seleccionados para exportar.');
+      return;
+    }
+
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      showToast('El generador PDF no está disponible. Verifica tu conexión e inténtalo nuevamente.');
+      return;
+    }
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 12;
+      const gap = 6;
+      const colW = (pageW - margin * 2 - gap) / 2;
+      const cardH = 43;
+      const rowGap = 6;
+      const topY = 22;
+      const bottomMargin = 12;
+      const rowsPerPage = Math.floor((pageH - topY - bottomMargin + rowGap) / (cardH + rowGap));
+      const cardsPerPage = rowsPerPage * 2;
+
+      function categoryTitle(category) {
+        const key = String(category || '').trim().toLowerCase();
+        if (key === 'analgesicos' || key === 'analgésicos') return 'ANALGÉSICOS';
+        if (key === 'genericos' || key === 'genéricos') return 'GENÉRICOS';
+        if (key === 'accesorios') return 'ACCESORIOS';
+        return String(category || 'GENERAL').toUpperCase();
+      }
+
+      function drawHeader(category) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(15, 23, 42);
+        doc.text(categoryTitle(category), margin, 13);
+
+        doc.setDrawColor(37, 99, 235);
+        doc.setLineWidth(0.7);
+        doc.line(margin, 17, pageW - margin, 17);
+      }
+
+      function drawCard(p, x, y) {
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.45);
+        doc.roundedRect(x, y, colW, cardH, 3, 3, 'FD');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(71, 85, 105);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13.5);
+        doc.setTextColor(15, 23, 42);
+        const name = String(p.producto || 'Artículo');
+        const nameLines = doc.splitTextToSize(name, colW - 10);
+        const visibleName = nameLines.slice(0, 3);
+        doc.text(visibleName, x + 5, y + 14, { lineHeightFactor: 1.12 });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text('Código: ' + String(p.codigo || 'S/C'), x + 5, y + cardH - 7);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(19);
+        doc.setTextColor(5, 150, 105);
+        doc.text('$' + money(p.venta), x + colW - 5, y + cardH - 8, { align: 'right' });
+      }
+
+      // Se generan páginas separadas por categoría.
+      // Así nunca se mezclan Analgésicos, Genéricos y Accesorios
+      // y el encabezado de cada página indica claramente la categoría.
+      const categoryGroups = [];
+      selected.forEach(p => {
+        const title = categoryTitle(p.categoria);
+        let group = categoryGroups.find(g => g.title === title);
+        if (!group) {
+          group = { title, items: [] };
+          categoryGroups.push(group);
+        }
+        group.items.push(p);
+      });
+
+      let firstPage = true;
+
+      categoryGroups.forEach(group => {
+        group.items.forEach((p, i) => {
+          const indexOnPage = i % cardsPerPage;
+
+          if (indexOnPage === 0) {
+            if (!firstPage) doc.addPage();
+            firstPage = false;
+            drawHeader(group.title);
+          }
+
+          const row = Math.floor(indexOnPage / 2);
+          const col = indexOnPage % 2;
+          const x = margin + col * (colW + gap);
+          const y = topY + row * (cardH + rowGap);
+          drawCard(p, x, y);
+        });
+      });
+
+      const pageCount = doc.getNumberOfPages();
+      for (let n = 1; n <= pageCount; n++) {
+        doc.setPage(n);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text('Página ' + n + ' de ' + pageCount, pageW - margin, pageH - 6, { align: 'right' });
+      }
+
+      doc.save('catalogo-de-precios.pdf');
+      showToast(`PDF generado con ${selected.length} artículos`);
+    } catch (e) {
+      console.error(e);
+      showToast('No se pudo generar el PDF.');
+    }
+  }
+
   // Listeners
   $('pdfFile').addEventListener('change', e => {
     if (e.target.files[0]) readPDF(e.target.files[0]);
@@ -1421,6 +1602,7 @@
   $('invertBtn').onclick = invert;
   $('copyBtn').onclick = copySheets;
   $('syncBtn').onclick = syncSheets;
+  $('exportPdfBtn').onclick = exportCatalogPDF;
   $('loadSheetsBtn').onclick = loadSheets;
 
   // Modal URL Config
