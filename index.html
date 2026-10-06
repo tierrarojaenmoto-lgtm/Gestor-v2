@@ -560,6 +560,14 @@
       -moz-appearance: textfield;
     }
 
+    /* Botón de imagen por producto */
+    .img-btn{width:46px;height:46px;flex-shrink:0;border-radius:12px;border:2px dashed #93c5fd;background:#f0f7ff center/cover no-repeat;color:var(--primary);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+    .img-btn.has-img{border:2px solid var(--success);}
+    .img-btn:active{transform:scale(.95);}
+    .img-btn:disabled{cursor:wait;}
+    .spin{width:18px;height:18px;border:2.5px solid #bfdbfe;border-top-color:var(--primary);border-radius:50%;animation:giro .7s linear infinite;}
+    @keyframes giro{to{transform:rotate(360deg)}}
+
     /* Custom Mobile Switch */
     .switch {
       position: relative;
@@ -984,6 +992,7 @@
 <span id="toastMsg">Mensaje informativo</span>
 </div>
 </div>
+<input type="file" id="imgInput" accept="image/*" hidden>
 <script>
   if (window.pdfjsLib) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -1052,7 +1061,9 @@
       costo: Number(p.costo) || 0,
       venta: Number(p.venta) || 0,
       categoria: p.categoria || 'General',
-      noSync: p.noSync === true || p.noExport === true
+      noSync: p.noSync === true || p.noExport === true,
+      imagenUrl: p.imagenUrl || '',
+      imagenId: p.imagenId || ''
     };
   }
 
@@ -1105,6 +1116,7 @@
       const card = document.createElement('div');
       card.className = `prod-card ${p.noSync ? 'excluded' : ''}`;
       card.innerHTML = `
+        <button type="button" class="img-btn" title="Subir imagen del producto" aria-label="Subir imagen"></button>
         <div class="prod-info">
           <div class="prod-badges">
             <span class="prod-code">${escapeHTML(p.codigo)}</span>
@@ -1124,6 +1136,10 @@
           <span class="slider"></span>
         </label>
       `;
+
+      const imgBtn = card.querySelector('.img-btn');
+      paintImg(imgBtn, p);
+      imgBtn.addEventListener('click', () => elegirImagen(p, imgBtn));
 
       const check = card.querySelector('.check-toggle');
       check.addEventListener('change', () => {
@@ -1402,6 +1418,7 @@
     showToast('Cargando catálogo desde Google Sheets...');
     try {
       const old = new Map(productos.map(p => [String(p.codigo), p.noSync === true]));
+      const oldImg = new Map(productos.map(p => [String(p.codigo), p]));
       const r = await fetch(url);
       const d = await r.json();
       if (!d.ok) throw new Error(d.error || 'Error desconocido');
@@ -1412,7 +1429,9 @@
         costo: Number(p.costo) || 0,
         venta: Number(p.precio) || 0,
         categoria: p.categoria || 'General',
-        noSync: old.get(String(p.codigo)) === true
+        noSync: old.get(String(p.codigo)) === true,
+        imagenUrl: oldImg.get(String(p.codigo))?.imagenUrl || '',
+        imagenId: oldImg.get(String(p.codigo))?.imagenId || ''
       }));
 
       save();
@@ -1589,6 +1608,85 @@
       showToast('No se pudo generar el PDF.');
     }
   }
+
+  /* Imágenes: elegir -> subir a Drive -> enlace en la hoja (vía Apps Script) */
+  const subiendo = new Set();
+  let imgTarget = null;
+  const ICON_CAM = '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+
+  function paintImg(btn, p) {
+    const busy = subiendo.has(p.codigo), tiene = !!p.imagenId && !busy;
+    btn.disabled = busy;
+    btn.classList.toggle('has-img', tiene);
+    btn.style.backgroundImage = tiene ? `url(https://drive.google.com/thumbnail?id=${encodeURIComponent(p.imagenId)}&sz=w96)` : '';
+    btn.innerHTML = busy ? '<span class="spin"></span>' : (p.imagenId ? '' : ICON_CAM);
+    btn.title = p.imagenId ? 'Cambiar imagen' : 'Subir imagen del producto';
+  }
+
+  function elegirImagen(p, btn) {
+    if (!$('webhookUrl').value.trim()) {
+      $('settingsModal').classList.add('open');
+      showToast('Configura primero la URL de Apps Script');
+      return;
+    }
+    imgTarget = { p, btn };
+    $('imgInput').value = '';
+    $('imgInput').click();
+  }
+
+  function reducirImagen(file, max = 1000) {
+    return new Promise((res, rej) => {
+      const img = new Image(), u = URL.createObjectURL(file);
+      img.onload = () => {
+        const k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+        x.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(u);
+        c.toBlob(b => b ? res(b) : rej(new Error('No se pudo procesar la imagen')), 'image/jpeg', 0.8);
+      };
+      img.onerror = () => rej(new Error('El archivo no es una imagen válida'));
+      img.src = u;
+    });
+  }
+
+  function blobBase64(blob) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(String(r.result).split(',')[1]);
+      r.onerror = () => rej(new Error('No se pudo leer la imagen'));
+      r.readAsDataURL(blob);
+    });
+  }
+
+  $('imgInput').addEventListener('change', async e => {
+    const file = e.target.files[0], t = imgTarget;
+    imgTarget = null;
+    if (!file || !t) return;
+    const { p, btn } = t;
+    subiendo.add(p.codigo); paintImg(btn, p);
+    try {
+      const data = await blobBase64(await reducirImagen(file));
+      const res = await fetch($('webhookUrl').value.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ accion: 'subirImagen', codigo: p.codigo, mime: 'image/jpeg', data })
+      });
+      const r = await res.json();
+      if (!r.ok) throw new Error(r.error || 'Error desconocido');
+      if (!r.url) throw new Error('El Apps Script aún no tiene el código de imágenes');
+      p.imagenUrl = r.url;
+      p.imagenId = r.id || ((r.url.match(/\/d\/([\w-]+)/) || [])[1]) || '';
+      save();
+      showToast('✓ Imagen subida a Drive y enlace guardado en la hoja');
+    } catch (err) {
+      showToast('Error al subir imagen: ' + (err instanceof SyntaxError ? 'respuesta inválida del script, revisá que esté implementado con la última versión' : err.message));
+    } finally {
+      subiendo.delete(p.codigo);
+      btn.isConnected ? paintImg(btn, p) : render();
+    }
+  });
 
   // Listeners
   $('pdfFile').addEventListener('change', e => {
