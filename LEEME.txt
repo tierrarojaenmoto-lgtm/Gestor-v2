@@ -11,7 +11,8 @@ GESTOR DE PRECIOS - INSTALACION EN GITHUB PAGES
 4) En Build and deployment elegir: Deploy from a branch.
 5) Branch: main. Carpeta: /(root). Guardar.
 6) Esperar a que GitHub Pages publique el sitio.
-7) Abrir la URL de GitHub Pages con Chrome.
+7) Abrir la URL de GitHub Pages con Chrome (debe ser https://USUARIO.github.io/REPO/). Aparece el boton "Instalar aplicacion" o menu ⋮ > Instalar aplicacion.
+   - Tambien subir icon-maskable-512.png.
 
 IMPORTANTE:
 - No renombrar index.html a Index.html.

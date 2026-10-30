@@ -3,9 +3,13 @@
 <html lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
-<meta content="#2563eb" name="theme-color"/>
+<meta content="#1976d2" name="theme-color"/>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="icon" type="image/png" href="./icon-192.png"/>
+<link rel="apple-touch-icon" href="./icon-192.png"/>
+<meta name="mobile-web-app-capable" content="yes"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
-<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Gestor inteligente de precios y sincronización móvil con Google Sheets" name="description"/>
 <title>Gestor de Precios</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
@@ -247,7 +251,7 @@
     }
     .upload-zone input {
       position: absolute;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       opacity: 0;
       cursor: pointer;
       width: 100%;
@@ -580,7 +584,7 @@
     .slider {
       position: absolute;
       cursor: pointer;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       background-color: #cbd5e1;
       transition: .2s ease;
       border-radius: 24px;
@@ -683,7 +687,7 @@
     /* Config Bottom Sheet */
     .modal-overlay {
       position: fixed;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       background: rgba(15, 23, 42, 0.4);
       backdrop-filter: blur(4px);
       z-index: 100;
@@ -1430,8 +1434,8 @@
         venta: Number(p.precio) || 0,
         categoria: p.categoria || 'General',
         noSync: old.get(String(p.codigo)) === true,
-        imagenUrl: oldImg.get(String(p.codigo))?.imagenUrl || '',
-        imagenId: oldImg.get(String(p.codigo))?.imagenId || ''
+        imagenUrl: (oldImg.get(String(p.codigo)) || {}).imagenUrl || '',
+        imagenId: (oldImg.get(String(p.codigo)) || {}).imagenId || ''
       }));
 
       save();
@@ -1726,4 +1730,38 @@
   load();
   window.addEventListener('beforeunload', save);
 </script>
+
+<script>
+(function(){
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('./sw.js').then(function(reg){
+        reg.addEventListener('updatefound',function(){
+          var nw=reg.installing;
+          if(nw)nw.addEventListener('statechange',function(){
+            if(nw.state==='installed'&&navigator.serviceWorker.controller){nw.postMessage('SKIP_WAITING');}
+          });
+        });
+      }).catch(function(e){console.warn('SW error',e);});
+    });
+  }
+  var deferred=null;
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();deferred=e;
+    var b=document.getElementById('btnInstalarPWA');
+    if(b)b.style.display='flex';
+  });
+  window.addEventListener('appinstalled',function(){
+    deferred=null;
+    var b=document.getElementById('btnInstalarPWA');
+    if(b)b.style.display='none';
+  });
+  window.instalarPWA=function(){
+    if(!deferred){alert('Para instalar: menú ⋮ de Chrome > "Instalar aplicación" (o "Agregar a pantalla principal").');return;}
+    deferred.prompt();
+    deferred.userChoice.then(function(){deferred=null;var b=document.getElementById('btnInstalarPWA');if(b)b.style.display='none';});
+  };
+})();
+</script>
+<button id="btnInstalarPWA" onclick="instalarPWA()" style="display:none;position:fixed;left:12px;right:12px;bottom:84px;z-index:60;max-width:456px;margin:0 auto;align-items:center;justify-content:center;gap:8px;padding:14px;border:0;border-radius:14px;background:#1976d2;color:#fff;font:700 15px system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25)">📲 Instalar aplicación</button>
 </body></html>
